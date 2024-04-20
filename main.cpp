@@ -5,6 +5,8 @@
 #include <cassert>
 #include <map>
 #include <array>
+#include <iomanip>
+#include <cstdint>
 
 enum class page_protect {
 	eReadWrite,
@@ -52,9 +54,9 @@ private:
 class binary_code {
 public:
 	binary_code(std::span<uint8_t> code) : m_mem{create_mem(code)} {}
-	void execute() {
-		void (*fun)() = static_cast<void (*)()>(m_mem.get_addr());
-		fun();
+	uint64_t execute() {
+		auto fun = static_cast<uint64_t (*)()>(m_mem.get_addr());
+		return fun();
 	}
 private:
 	static virtual_memory create_mem(std::span<uint8_t> code) {
@@ -68,10 +70,65 @@ private:
 	virtual_memory m_mem;
 };
 
+namespace amd64 {
+	enum class operation {
+		XOR,
+		RET,
+	};
+
+	namespace reg {
+		class AL {};
+	}
+	enum class reg32 {
+		EAX
+	};
+	struct imm8 {
+		uint8_t value;
+	};
+
+	template<uint32_t SIZE>
+	class opcode {
+	public:
+		std::array<uint8_t, SIZE> codes;
+	};
+	struct none {};
+
+	template<operation OPERATION, class DEST, class SRC>
+	class mnemonic {
+
+	};
+
+	template<>
+	class mnemonic<operation::XOR, reg::AL, imm8> {
+	public:
+		imm8 imm;
+		opcode<2> get_opcode() {
+			return { 0x34, imm.value };
+		}
+	};
+	template<>
+	class mnemonic<operation::XOR, reg32, reg32> {
+	public:
+		reg32 dst;
+		reg32 src;
+		opcode<2> get_opcode() {
+			return { 0x33, 0xc0 };
+		}
+	};
+	template<>
+	class mnemonic<operation::RET, none, none> {
+	public:
+		uint8_t get_opcode() {
+			return 0xc3;
+		}
+	};
+}
 
 int main() {
-	std::array<uint8_t,1> codes = { 0xc3 }; // 0xc3 is x86 instruction: RET ---- return from a function call.
+	using namespace amd64;
+	auto opcode = mnemonic<operation::XOR, reg32, reg32>{reg32::EAX, reg32::EAX}.get_opcode();
+	std::array<uint8_t,3> codes = { opcode.codes[0], opcode.codes[1], mnemonic<operation::RET, none, none>{}.get_opcode()}; // 0xc3 is x86 instruction: RET ---- return from a function call.
 	binary_code code{ std::span<uint8_t>{codes.data(), codes.size()}};
-	code.execute();
+	std::cout << std::hex << std::setw(64/4) << std::setfill('0') << code.execute() << std::endl;
 	return 0;
 }
