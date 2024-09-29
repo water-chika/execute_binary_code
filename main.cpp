@@ -7,6 +7,7 @@
 #include <array>
 #include <iomanip>
 #include <cstdint>
+#include <vector>
 
 enum class page_protect {
 	eReadWrite,
@@ -54,9 +55,10 @@ private:
 class binary_code {
 public:
 	binary_code(std::span<uint8_t> code) : m_mem{create_mem(code)} {}
-	uint64_t execute() {
-		auto fun = static_cast<uint64_t (*)()>(m_mem.get_addr());
-		return fun();
+	template<class... ARGS>
+	uint64_t execute(ARGS... args) {
+		auto fun = static_cast<uint64_t (*)(ARGS...)>(m_mem.get_addr());
+		return fun(args...);
 	}
 private:
 	static virtual_memory create_mem(std::span<uint8_t> code) {
@@ -124,11 +126,17 @@ namespace amd64 {
 	};
 }
 
+int32_t add(int32_t lhs, int32_t rhs) {
+	// MOV 89 /r
+	auto codes = std::vector<uint8_t>{
+		0x89, 0b11001000,
+		0x11, 0b11010000,
+		0xc3
+	};
+	return binary_code{ codes }.execute(lhs, rhs);
+}
+
 int main() {
-	using namespace amd64;
-	auto opcode = mnemonic<operation::XOR, reg32, reg32>{reg32::EAX, reg32::EAX}.get_opcode();
-	std::array<uint8_t,3> codes = { opcode.codes[0], opcode.codes[1], mnemonic<operation::RET, none, none>{}.get_opcode()}; // 0xc3 is x86 instruction: RET ---- return from a function call.
-	binary_code code{ std::span<uint8_t>{codes.data(), codes.size()}};
-	std::cout << std::hex << std::setw(64/4) << std::setfill('0') << code.execute() << std::endl;
+	std::cout << std::hex << std::setw(64/4) << std::setfill('0') << add(1,2) << std::endl;
 	return 0;
 }
