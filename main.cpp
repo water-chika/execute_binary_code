@@ -130,13 +130,27 @@ int32_t add(int32_t lhs, int32_t rhs) {
 	// MOV 89 /r
 	auto codes = std::vector<uint8_t>{
 		0x89, 0b11001000,
-		0x11, 0b11010000,
+		0x01, 0b11010000,
 		0xc3
 	};
 	return binary_code{ codes }.execute(lhs, rhs);
 }
 
+bool test_little_endian() {
+	uint64_t x = 0x0706050403020100;
+	uint64_t* p_x = &x;
+	auto codes = std::vector<uint8_t>{
+				0x31, 0b11000000,
+				0x8A, 0b00000001,
+				0xc3
+	};
+	return binary_code{
+			codes
+		}.execute(p_x) == 0x00;
+}
+
 int main() {
 	std::cout << std::hex << std::setw(64/4) << std::setfill('0') << add(1,2) << std::endl;
+	std::cout << "little endian: " << test_little_endian() << std::endl;
 	return 0;
 }
