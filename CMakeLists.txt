@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(cpp_project)
+project(execute_binary_code)
 
 add_executable(test
     main.cpp)

@@ -149,8 +149,52 @@ bool test_little_endian() {
 		}.execute(p_x) == 0x00;
 }
 
+void add_test(uint64_t* lhs, uint64_t* rhs, uint64_t* res, size_t size) {
+	auto codes = std::vector<uint8_t>{
+		0b0100'1000, 0x8B, 0b00'000'001,
+		0b0100'1000, 0x13, 0b00'000'010,
+		0b0100'1001, 0x89, 0b00'000'000,
+		0b0100'1000, 0xFF, 0b11'000'001,
+		0b0100'1000, 0xFF, 0b11'000'001,
+		0b0100'1000, 0xFF, 0b11'000'001,
+		0b0100'1000, 0xFF, 0b11'000'001,
+		0b0100'1000, 0xFF, 0b11'000'001,
+		0b0100'1000, 0xFF, 0b11'000'001,
+		0b0100'1000, 0xFF, 0b11'000'001,
+		0b0100'1000, 0xFF, 0b11'000'001,
+		0b0100'1000, 0xFF, 0b11'000'010,
+		0b0100'1000, 0xFF, 0b11'000'010,
+		0b0100'1000, 0xFF, 0b11'000'010,
+		0b0100'1000, 0xFF, 0b11'000'010,
+		0b0100'1000, 0xFF, 0b11'000'010,
+		0b0100'1000, 0xFF, 0b11'000'010,
+		0b0100'1000, 0xFF, 0b11'000'010,
+		0b0100'1000, 0xFF, 0b11'000'010,
+		0b0100'1001, 0xFF, 0b11'000'000,
+		0b0100'1001, 0xFF, 0b11'000'000,
+		0b0100'1001, 0xFF, 0b11'000'000,
+		0b0100'1001, 0xFF, 0b11'000'000,
+		0b0100'1001, 0xFF, 0b11'000'000,
+		0b0100'1001, 0xFF, 0b11'000'000,
+		0b0100'1001, 0xFF, 0b11'000'000,
+		0b0100'1001, 0xFF, 0b11'000'000,
+		0b0100'1001, 0xFF, 0b11'001'001,
+		0x75, static_cast<uint8_t>(-86),
+		0xc3
+	};
+	binary_code{ codes }.execute(lhs, rhs, res, size);
+}
+
 int main() {
 	std::cout << std::hex << std::setw(64/4) << std::setfill('0') << add(1,2) << std::endl;
 	std::cout << "little endian: " << test_little_endian() << std::endl;
+	std::array<uint64_t, 9> x{ 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe, 0x32 };
+	std::array<uint64_t, 9> y{ 0xffffffffffffffff, 0xff00, 0x1};
+	std::array<uint64_t, 10> z{};
+	add_test(x.data(), y.data(), z.data(), x.size());
+	for (auto d : z) {
+		std::cout << d << ' ';
+	}
+	std::cout << std::endl;
 	return 0;
 }
