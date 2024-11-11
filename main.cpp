@@ -1,5 +1,8 @@
 #include <execute_binary_code.hpp>
 
+#include <set>
+#include <map>
+
 namespace amd64 {
 	enum class operation {
 		XOR,
@@ -54,12 +57,57 @@ namespace amd64 {
 	};
 }
 
+enum reg : uint8_t {
+    RAX,RCX,RDX,RBX,RSP,RBP,RSI,RDI,
+    EAX,ECX,EDX,EBX,ESP,EBP,ESI,EDI,
+};
+
+uint8_t modrm_reg_encode(reg r) {
+    std::set<reg> table[8];
+    table[0b000] = std::set<reg>{
+        RAX,EAX
+    };
+    table[0b001] = std::set<reg>{
+        RCX,ECX
+    };
+    table[0b010] = std::set<reg>{
+        RDX,EDX
+    };
+    table[0b011] = std::set<reg>{
+        RBX,EBX
+    };
+    table[0b100] = std::set<reg>{
+        RSP,ESP
+    };
+    table[0b101] = std::set<reg>{
+        RBP,EBP
+    };
+    table[0b110] = std::set<reg>{
+        RSI,ESI
+    };
+    table[0b111] = std::set<reg>{
+        RDI,EDI
+    };
+    std::map<reg, uint8_t> reg_map{};
+    for (uint8_t code = 0; code < 8; code++) {
+        for (auto r : table[code]) {
+            reg_map.emplace(r, code);
+        }
+    }
+
+    return reg_map[r];
+}
+
+uint8_t encode_operands(reg src, reg dst) {
+    return 0b11'000'000 | (modrm_reg_encode(src) << 3) | modrm_reg_encode(dst);
+}
+
 #ifdef WIN32
 int32_t add(int32_t lhs, int32_t rhs) {
 	// MOV 89 /r
 	auto codes = std::vector<uint8_t>{
-		0x89, 0b11001000,
-		0x01, 0b11010000,
+		0x89, encode_operands(ECX, EAX), //0b11001000,
+		0x01, encode_operands(EDX, EAX), //0b11010000,
 		0xc3
 	};
 	return binary_code{ codes }.execute(lhs, rhs);
@@ -69,8 +117,8 @@ int32_t add(int32_t lhs, int32_t rhs) {
 int32_t add(int32_t lhs, int32_t rhs) {
 	// MOV 89 /r
 	auto codes = std::vector<uint8_t>{
-		0x89, 0b11'111'000,
-		0x01, 0b11'110'000,
+		0x89, encode_operands(EDI, EAX), //0b11'111'000,
+        0x01, encode_operands(ESI, EAX), //0b11'110'000,
 		0xc3
 	};
 	return binary_code{ codes }.execute(lhs, rhs);
