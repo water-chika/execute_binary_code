@@ -54,6 +54,7 @@ namespace amd64 {
 	};
 }
 
+#ifdef WIN32
 int32_t add(int32_t lhs, int32_t rhs) {
 	// MOV 89 /r
 	auto codes = std::vector<uint8_t>{
@@ -63,6 +64,18 @@ int32_t add(int32_t lhs, int32_t rhs) {
 	};
 	return binary_code{ codes }.execute(lhs, rhs);
 }
+#endif
+#ifdef linux
+int32_t add(int32_t lhs, int32_t rhs) {
+	// MOV 89 /r
+	auto codes = std::vector<uint8_t>{
+		0x89, 0b11'111'000,
+		0x01, 0b11'110'000,
+		0xc3
+	};
+	return binary_code{ codes }.execute(lhs, rhs);
+}
+#endif
 
 bool test_little_endian() {
 	uint64_t x = 0x0706050403020100;
